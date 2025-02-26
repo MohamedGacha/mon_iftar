@@ -1,0 +1,63 @@
+# Python Bytecode Files
+__pycache__/
+*.py[cod]
+
+# Virtual Environment (Anaconda)
+env/
+.conda/
+.venv/
+*.env
+
+# Django migrations
+*/migrations/
+
+# Database
+db.sqlite3
+*.sqlite3
+
+# Static files
+/static/
+
+# Media files
+/media/
+
+# Django secret key
+*.key
+*.pem
+
+# PyCharm/IDE files
+.idea/
+
+# VSCode settings
+.vscode/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Local environment variables
+.env
+
+# Anaconda environment files
+environment.yml
+conda-meta/
+
+# Logs
+*.log
+
+# Coverage
+.coverage
+.coverage.*
+nosetests.xml
+pytest*.xml
+*.cover
+
+# Test or development builds
+*.pot
+*.mo
+
+# Django Debug Toolbar
+*.sqlite3
+*.db
+
+# Django project settings (ignore settings.py if using separate local configurations)
+settings.py
