@@ -40,36 +40,36 @@ class RegisterUserAPIView(APIView):
 
 
 class FirstLoginAPIView(APIView):
-
-    def get(self, request, *args, **kwargs):
-        """Check if the user needs to complete the first login setup."""
-        user = request.user
-
-        if not isinstance(user, Benevole):
-            return Response({'error': 'Utilisateur non autorisé.'}, status=status.HTTP_403_FORBIDDEN)
-
-        if not user.is_first_loggin:
-            return Response({'message': 'Profil déjà complété.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Token is not required for the first login setup process, just guiding the user.
-        return Response({
-            'message': 'Veuillez compléter votre profil.'
-        }, status=status.HTTP_200_OK)
-
     def post(self, request, *args, **kwargs):
         """Handle the completion of the first login setup."""
-        user = request.user
+        username = request.data.get('username')
+        password = request.data.get('password')
 
-        if user.is_first_loggin:
-            return Response({'error': 'Action non autorisée ou profil déjà complété.'},
+        if not username or not password:
+            return Response({'error': 'Nom d\'utilisateur et mot de passe requis.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is None:
+            return Response({'error': 'Nom d\'utilisateur ou mot de passe incorrect.'},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        if not isinstance(user, Benevole):
+            return Response({'error': 'Utilisateur non autorisé.'},
                             status=status.HTTP_403_FORBIDDEN)
+
+        if not user.is_first_loggin:
+            return Response({'message': 'Profil déjà complété.'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         serializer = FirstLoginSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             user.is_first_loggin = False  # Mark the user as having completed their first login
             user.save()
-            tokens = get_tokens_for_user(user)
+            
+            tokens = get_tokens_for_user(user)  # Generate tokens if needed
             return Response({
                 'message': 'Profil complété avec succès.',
                 'tokens': tokens
