@@ -1,1 +1,1 @@
-web gunicorn my_iftar.mon_iftar.wsgi:application
+web gunicorn mon_iftar.wsgi
