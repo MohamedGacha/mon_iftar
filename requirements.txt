@@ -2,6 +2,9 @@
 Django
 psycopg2
 psycopg2-binary
+psycopg2
+
+qrcode
 
 # Django REST Framework & JWT Authentication
 djangorestframework
@@ -34,3 +37,5 @@ gunicorn
 
 # Additional Tools (Optional)
 requests
+django_heroku
+dj_database_url
