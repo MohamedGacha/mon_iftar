@@ -2,6 +2,8 @@
 Django
 psycopg2-binary
 
+qrcode
+
 # Django REST Framework & JWT Authentication
 djangorestframework
 djangorestframework-simplejwt
