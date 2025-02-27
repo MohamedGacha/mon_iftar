@@ -1,5 +1,6 @@
 # Core Django & Database
 Django
+psycopg2
 psycopg2-binary
 
 # Django REST Framework & JWT Authentication
@@ -12,6 +13,7 @@ twilio
 
 # Environment Variables Management
 python-dotenv
+qrcode
 
 # CORS Headers (for Flutter integration)
 django-cors-headers

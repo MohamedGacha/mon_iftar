@@ -1,1 +1,0 @@
-web gunicorn my_iftar.mon_iftar.wsgi:application  --log-file -

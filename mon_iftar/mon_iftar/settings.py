@@ -33,7 +33,7 @@ SECRET_KEY = 'django-insecure-(f57debb!zr258jsp5w1ya5=5$b8y0#rj06tqtv(1!azfhul_i
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['https://mon-iftar-api-676394055b7c.herokuapp.com']
+ALLOWED_HOSTS = ['.herokuapp.com']
 
 
 # Application definition
@@ -91,13 +91,10 @@ AUTH_USER_MODEL = 'user_management.Benevole'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
 
+DATABASES = {
+    'default': dj_database_url.config(default='postgres://u7f3pqtgtrf24f:p8cb40b8a0437460fce0f3ccc720d51d155b8a16f98c5b4826d8e43909ed650e4@c8lj070d5ubs83.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d28tqm6asurd38')
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
