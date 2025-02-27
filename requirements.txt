@@ -32,3 +32,5 @@ gunicorn
 
 # Additional Tools (Optional)
 requests
+django_heroku
+dj_database_url
