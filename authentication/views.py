@@ -4,11 +4,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from user_management.models import Benevole
-from user_management.permissions import IsFirstLoginUser, IsRegularUser
+from user_management.permissions import IsRegularUser
 from user_management.serializers import FirstLoginSerializer
-from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate
+
 
 def get_tokens_for_user(user):
+    """Generate JWT tokens for the user"""
     refresh = RefreshToken.for_user(user)
     return {
         'refresh': str(refresh),
@@ -16,18 +18,28 @@ def get_tokens_for_user(user):
     }
 
 
-def register_user(request):
-    # Handle registration logic...
-    user = Benevole.objects.create_user(
-        username="new_user", password="password")
-    # Ensure the user is marked as a first-time login user
-    user.is_first_loggin = True
-    user.save()
+class RegisterUserAPIView(APIView):
+    
+    permission_classes = [IsAuthenticated, IsRegularUser]
+    def post(self, request, *args, **kwargs):
+        """Register a new user and return their tokens"""
+        username = request.data.get('username')
+        password = request.data.get('password')
 
-    tokens = get_tokens_for_user(user)
-    return Response(tokens)
+        if not username or not password:
+            return Response({'error': 'Username and password are required.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Create the user and mark as first login
+        user = Benevole.objects.create_user(username=username, password=password)
+        user.is_first_loggin = True
+        user.save()
+
+        tokens = get_tokens_for_user(user)
+        return Response(tokens, status=status.HTTP_201_CREATED)
+
+
 class FirstLoginAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsFirstLoginUser]
 
     def get(self, request, *args, **kwargs):
         """Check if the user needs to complete the first login setup."""
@@ -39,11 +51,9 @@ class FirstLoginAPIView(APIView):
         if not user.is_first_loggin:
             return Response({'message': 'Profil déjà complété.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Optionally, include the token in the GET response if needed:
-        token, created = Token.objects.get_or_create(user=user)
+        # Token is not required for the first login setup process, just guiding the user.
         return Response({
-            'message': 'Veuillez compléter votre profil.',
-            'token': token.key
+            'message': 'Veuillez compléter votre profil.'
         }, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
@@ -57,35 +67,40 @@ class FirstLoginAPIView(APIView):
         serializer = FirstLoginSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            token, created = Token.objects.get_or_create(user=user)
+            user.is_first_loggin = False  # Mark the user as having completed their first login
+            user.save()
+            tokens = get_tokens_for_user(user)
             return Response({
                 'message': 'Profil complété avec succès.',
-                'token': token.key
+                'tokens': tokens
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class RegularLoginAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsRegularUser]
-
     def post(self, request, *args, **kwargs):
-        user = request.user
+        """Authenticate the user and return JWT tokens."""
+        username = request.data.get('username')
+        password = request.data.get('password')
 
-        if isinstance(user, Benevole):  # Ensure the user is a Benevole instance
-            if user.is_first_loggin:
-                # If it's the first login, update the flag and save the user
-                user.is_first_loggin = False
-                user.save()
+        if not username or not password:
+            return Response({'error': 'Username and password are required.'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-            # Retrieve or create the token for the user
-            token, created = Token.objects.get_or_create(user=user)
+        # Authenticate the user using the provided credentials
+        user = authenticate(username=username, password=password)
 
-            # Return the token along with a success message
-            return Response({
-                'message': 'Login successful',
-                'username': user.username,
-                'token': token.key
-            }, status=status.HTTP_200_OK)
+        if not user:
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        if isinstance(user, Benevole) and user.is_first_loggin:
+            return Response({'message': 'Please complete your profile first.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Generate and return JWT tokens for the authenticated user
+        tokens = get_tokens_for_user(user)
+        return Response({
+            'message': 'Login successful',
+            'username': user.username,
+            'tokens': tokens
+        }, status=status.HTTP_200_OK)
