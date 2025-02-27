@@ -7,6 +7,7 @@ from .views import (
     BenevoleListAPIView,
     CreateBenevoleAPIView,
     CreateLocationAPIView,
+    CurrentUserAPIView,
     DeleteBeneficiaireAPIView,
     LocationListAPIView,
     MakeAdminAPIView,
@@ -28,4 +29,5 @@ urlpatterns = [
          name='beneficiaire-search'),
     path('location/create/', CreateLocationAPIView.as_view(), name='create-location'),
     path('location/search/', SearchLocationAPIView.as_view(), name='search-location'),
+     path('me/', CurrentUserAPIView.as_view(), name='current-user'),
 ]
