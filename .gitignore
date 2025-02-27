@@ -6,7 +6,7 @@ __pycache__/
 env/
 .conda/
 .venv/
-*.env
+#*.env
 
 # Django migrations
 */migrations/
@@ -35,7 +35,7 @@ db.sqlite3
 .ipynb_checkpoints/
 
 # Local environment variables
-.env
+#.env
 
 # Anaconda environment files
 environment.yml
@@ -60,4 +60,4 @@ pytest*.xml
 *.db
 
 # Django project settings (ignore settings.py if using separate local configurations)
-settings.py
+#settings.py
