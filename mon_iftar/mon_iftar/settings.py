@@ -29,7 +29,7 @@ TWILIO_WHATSAPP_NUMBER = os.getenv('TWILIO_WHATSAPP_NUMBER')
 SECRET_KEY = 'django-insecure-(f57debb!zr258jsp5w1ya5=5$b8y0#rj06tqtv(1!azfhul_i'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = []
 
