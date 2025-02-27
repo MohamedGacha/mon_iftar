@@ -11,7 +11,6 @@ from .permissions import IsAdminUser
 from .serializers import (
     BeneficiaireSerializer,
     BenevoleSerializer,
-    FirstLoginSerializer,
     LocationSerializer,
 )
 
@@ -33,7 +32,7 @@ class CreateBenevoleAPIView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         # Create the Benevole
-        benevole = Benevole.objects.create_user(
+        Benevole.objects.create_user(
             username=phone_number,
             num_telephone=phone_number,
             password=generated_password

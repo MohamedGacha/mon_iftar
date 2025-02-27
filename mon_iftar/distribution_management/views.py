@@ -49,7 +49,7 @@ class CreateDistributionView(APIView):
 
         if serializer.is_valid():
             # Save the new distribution
-            distribution = serializer.save()
+            serializer.save()
 
             # Create QR codes for all beneficiaries in the distribution list
             # Assuming `beneficiaires` is the related name
