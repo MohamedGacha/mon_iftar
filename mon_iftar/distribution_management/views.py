@@ -1,0 +1,231 @@
+from datetime import timezone
+
+from django.shortcuts import get_object_or_404
+from rest_framework import status
+
+# Create your views here.
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from user_management.models import Benevole, Location
+from user_management.permissions import IsAdminUser, IsRegularUser
+from user_management.serializers import (
+    BeneficiaireSerializer,
+    BenevoleSerializer,
+)
+from utils.whatsapp import send_whatsapp_message
+
+from .models import Distribution, DistributionList, QRCodeDistribution
+from .serializers import DistributionSerializer, QRCodeScanSerializer
+
+
+class CreateDistributionView(APIView):
+    # Ensure that only admins can create a distribution
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, *args, **kwargs):
+        """
+        Create a new distribution for a location, with stock, description, and date/time.
+        The distribution list is automatically selected based on the location.
+        QR codes are created for all beneficiaries in the associated distribution list.
+        """
+        # Extract the location from the request data
+        location_id = request.data.get('location')
+        location = get_object_or_404(Location, id=location_id)
+
+        # Check if there is a distribution list associated with the location
+        distribution_list = DistributionList.objects.filter(
+            location=location).first()
+
+        if not distribution_list:
+            return Response({"detail": "No distribution list found for the specified location."}, status=400)
+
+        # Add the location to the data for the serializer
+        data = request.data.copy()
+        data['distribution_list'] = distribution_list.id
+
+        # Create a DistributionSerializer instance with the provided data
+        serializer = DistributionSerializer(data=data)
+
+        if serializer.is_valid():
+            # Save the new distribution
+            distribution = serializer.save()
+
+            # Create QR codes for all beneficiaries in the distribution list
+            # Assuming `beneficiaires` is the related name
+            beneficiaries = distribution_list.beneficiaires.all()
+            for beneficiaire in beneficiaries:
+                # Create the QRCodeDistribution for each beneficiaire
+                qr_code = QRCodeDistribution.objects.create(
+                    beneficiaire=beneficiaire,
+                    date_validite=timezone.localdate()
+                )
+                # You can call save explicitly to trigger the send_whatsapp_qr_code if necessary:
+                qr_code.save()
+
+            return Response(serializer.data, status=201)
+        else:
+            return Response(serializer.errors, status=400)
+
+
+class DistributionListBeneficiaireListAPIView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, *args, **kwargs):
+        distribution_list_id = kwargs.get('distribution_list_id')
+
+        try:
+            distribution_list = DistributionList.objects.get(
+                id=distribution_list_id)
+        except DistributionList.DoesNotExist:
+            return Response({"detail": "DistributionList not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get the filter parameter to determine which list to show
+        list_type = request.query_params.get('list_type', None)
+
+        if list_type == 'main_list':
+            beneficiaries = distribution_list.main_list.all()
+        elif list_type == 'waiting_list':
+            beneficiaries = distribution_list.waiting_list.all()
+        else:
+            # Default to showing both lists if no filter is provided
+            beneficiaries = distribution_list.main_list.all(
+            ) | distribution_list.waiting_list.all()
+
+        # Serialize the beneficiaries
+        serializer = BeneficiaireSerializer(beneficiaries, many=True)
+
+        return Response({
+            'distribution_list_id': distribution_list.id,
+            # Add other location details if needed
+            'location': distribution_list.location.name,
+            'beneficiaries': serializer.data
+        })
+
+
+class QRCodeScanView(APIView):
+    permission_classes = [IsAuthenticated, IsRegularUser]
+
+    def post(self, request):
+        # Validate input data
+        serializer = QRCodeScanSerializer(data=request.data)
+        if serializer.is_valid():
+            code_unique = serializer.validated_data['code_unique']
+
+            try:
+                # Retrieve the QR code object based on code_unique
+                qr_code = QRCodeDistribution.objects.get(
+                    code_unique=code_unique)
+
+                # Get the beneficiaire associated with the qr_code
+                beneficiaire = qr_code.beneficiaire
+                # assuming user is linked to benevole
+                benevole = Benevole.objects.get(user=request.user)
+
+                # Ensure both benevole and beneficiaire have the same location
+                if beneficiaire.location != benevole.location:
+                    return Response({"detail": "Locations must match between Benevole and Beneficiaire."}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Validate the QR code (it will set heure_utilise if valid)
+                qr_code.validate_code()
+
+                # Send a success message (optional, you can remove this if not needed)
+                send_whatsapp_message(
+                    beneficiaire.num_telephone,
+                    f"Your QR code {code_unique} has been validated successfully!",
+                    console=True
+                )
+
+                return Response({"detail": "QR code validated successfully!"}, status=status.HTTP_200_OK)
+
+            except QRCodeDistribution.DoesNotExist:
+                return Response({"detail": "QR code not found."}, status=status.HTTP_404_NOT_FOUND)
+            except Benevole.DoesNotExist:
+                return Response({"detail": "Benevole not found."}, status=status.HTTP_404_NOT_FOUND)
+            except Location.DoesNotExist:
+                return Response({"detail": "Location mismatch error."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # If serializer is invalid
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DistributionListLocationAPIView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, *args, **kwargs):
+        location_id = kwargs.get('location_id')
+
+        # Fetch the location object based on the ID
+        try:
+            location = Location.objects.get(id=location_id)
+        except Location.DoesNotExist:
+            return Response({"detail": "Location not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Fetch all distribution lists for the given location
+        distribution_lists = DistributionList.objects.filter(location=location)
+
+        # Fetch all benevoles with the same location
+        benevoles = Benevole.objects.filter(location=location)
+
+        # Serialize benevoles
+        benevole_serializer = BenevoleSerializer(benevoles, many=True)
+
+        # Serialize distribution lists
+        distribution_list_data = []
+        for distribution_list in distribution_lists:
+            distribution_list_data.append({
+                'id': distribution_list.id,
+                'location': location.name,  # Add other location details if needed
+                'main_list_size': distribution_list.main_list.count(),
+                'waiting_list_size': distribution_list.waiting_list.count(),
+                # Add benevoles associated with this location
+                'benevoles': benevole_serializer.data
+            })
+
+        return Response({
+            'location': location.name,
+            'distribution_lists': distribution_list_data
+        })
+
+
+class TodayDistributionAPIView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, *args, **kwargs):
+        # Get today's date in UTC
+        today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_end = today_start.replace(
+            hour=23, minute=59, second=59, microsecond=999999)
+
+        # Filter distributions happening today
+        distributions_today = Distribution.objects.filter(
+            date_distribution__range=[today_start, today_end]
+        )
+
+        # Serialize the distribution data
+        distribution_serializer = DistributionSerializer(
+            distributions_today, many=True)
+
+        return Response({
+            'today_distributions': distribution_serializer.data
+        })
+
+
+class UpcomingDistributionAPIView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, *args, **kwargs):
+        # Get the current date and time
+        now = timezone.now()
+
+        # Filter distributions that are scheduled in the future (after the current time)
+        upcoming_distributions = Distribution.objects.filter(
+            date_distribution__gt=now)
+
+        # Serialize the distribution data
+        distribution_serializer = DistributionSerializer(
+            upcoming_distributions, many=True)
+
+        return Response({
+            'upcoming_distributions': distribution_serializer.data
+        })
