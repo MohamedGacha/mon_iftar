@@ -14,13 +14,13 @@ twilio==9.4.6
 python-dotenv==1.0.1
 
 # CORS Headers (for Flutter integration)
-django-cors-headers
+django-cors-headers==3.13.0
 
 # WebSockets (Optional, for future use with Django Channels)
 asgiref==3.8.1
 redis==5.2.1
-channels
-channels-redis
+channels==4.0.0
+channels-redis==4.0.0
 
 # Database Migrations
 alembic==1.14.0
@@ -28,7 +28,7 @@ SQLAlchemy==2.0.36
 sqlparse==0.5.3
 
 # Production Server
-gunicorn
+gunicorn==20.1.1
 
 # Additional Tools (Optional)
 requests==2.32.3
