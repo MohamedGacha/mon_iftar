@@ -33,7 +33,8 @@ SECRET_KEY = 'django-insecure-(f57debb!zr258jsp5w1ya5=5$b8y0#rj06tqtv(1!azfhul_i
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['https://mon-iftar-api-676394055b7c.herokuapp.com']
+ALLOWED_HOSTS = ['mon-iftar-api-676394055b7c.herokuapp.com', 'localhost', '127.0.0.1']
+
 
 
 # Application definition
