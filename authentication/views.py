@@ -30,7 +30,6 @@ class RegisterUserAPIView(APIView):
             return Response({'error': 'Username and password are required.'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        # Create the user and mark as first login
         user = Benevole.objects.create_user(username=username, password=password)
         user.is_first_loggin = True
         user.save()
@@ -66,10 +65,10 @@ class FirstLoginAPIView(APIView):
         serializer = FirstLoginSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            user.is_first_loggin = False  # Mark the user as having completed their first login
+            user.is_first_loggin = False
             user.save()
             
-            tokens = get_tokens_for_user(user)  # Generate tokens if needed
+            tokens = get_tokens_for_user(user)
             return Response({
                 'message': 'Profil complété avec succès.',
                 'tokens': tokens
@@ -88,7 +87,6 @@ class RegularLoginAPIView(APIView):
             return Response({'error': 'Username and password are required.'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        # Authenticate the user using the provided credentials
         user = authenticate(username=username, password=password)
 
         if not user:
@@ -97,7 +95,6 @@ class RegularLoginAPIView(APIView):
         if isinstance(user, Benevole) and user.is_first_loggin:
             return Response({'message': 'Please complete your profile first.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Generate and return JWT tokens for the authenticated user
         tokens = get_tokens_for_user(user)
         return Response({
             'message': 'Login successful',
