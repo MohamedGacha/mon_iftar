@@ -60,7 +60,7 @@ class FirstLoginAPIView(APIView):
         """Handle the completion of the first login setup."""
         user = request.user
 
-        if not isinstance(user, Benevole) or not user.is_first_loggin:
+        if user.is_first_loggin:
             return Response({'error': 'Action non autorisée ou profil déjà complété.'},
                             status=status.HTTP_403_FORBIDDEN)
 
