@@ -80,7 +80,7 @@ class AddBeneficiaireAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        if request.user.admin:
+        if not request.user.admin:
             return Response({'error': 'Seuls les bénévoles réguliers peuvent ajouter des bénéficiaires.'},
                             status=status.HTTP_403_FORBIDDEN)
 
