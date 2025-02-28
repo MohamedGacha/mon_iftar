@@ -16,6 +16,7 @@ import django_heroku
 import dj_database_url
 
 from dotenv import load_dotenv
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -36,6 +37,12 @@ DEBUG = True
 ALLOWED_HOSTS = ['https://mon-iftar-api-676394055b7c.herokuapp.com']
 
 
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
+}
 
 # Application definition
 

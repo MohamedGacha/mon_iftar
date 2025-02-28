@@ -13,9 +13,9 @@ from .serializers import (
     BenevoleSerializer,
     LocationSerializer,
 )
+import logging
 
-from rest_framework.authentication import TokenAuthentication, SessionAuthentication
-from django.contrib.auth.models import AnonymousUser
+logger = logging.getLogger(__name__)
 
 class CreateBenevoleAPIView(APIView):
     permission_classes = [IsAdminUser]
