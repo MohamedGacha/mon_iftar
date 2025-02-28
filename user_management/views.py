@@ -230,7 +230,5 @@ class CurrentUserAPIView(APIView):
     def get(self, request, *args, **kwargs):
         """Get the current logged-in user's data."""
         user = request.user
-        return Response({
-            'username': user.username,
-            'is_first_loggin': user.is_first_loggin
-        }, status=status.HTTP_200_OK)
+        serializer = BenevoleSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
