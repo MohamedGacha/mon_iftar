@@ -225,29 +225,13 @@ class SearchLocationAPIView(APIView):
         serializer = LocationSerializer(locations, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
 class CurrentUserAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     # Add multiple authentication classes to support both token and session auth
     authentication_classes = [TokenAuthentication, SessionAuthentication]
-
-    def get(self, request, *args, **kwargs):
-        """Get the current logged-in user's data."""
-        user = request.user
         
-        # Debug information to help trace the issue
-        if isinstance(user, AnonymousUser):
-            return Response(
-                {"detail": "Authentication credentials were not provided or are invalid."},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-            
-        try:
-            serializer = BenevoleSerializer(user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            # Log the exception for debugging
-            print(f"Error in CurrentUserAPIView: {str(e)}")
-            return Response(
-                {"detail": f"An error occurred: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+    def get(self, request, *args, **kwargs):
+        serializer = BenevoleSerializer(request.user)
+        return Response(serializer.data)
