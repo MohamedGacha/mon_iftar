@@ -7,8 +7,9 @@ from user_management.models import Benevole
 from user_management.permissions import IsRegularUser
 from user_management.serializers import FirstLoginSerializer
 from django.contrib.auth import authenticate
+import logging
 from django.db import IntegrityError
-
+logger = logging.getLogger(__name__)
 
 def get_tokens_for_user(user):
     """Generate JWT tokens for the user"""
@@ -82,30 +83,61 @@ class FirstLoginAPIView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class RegularLoginAPIView(APIView):
     def post(self, request, *args, **kwargs):
         """Authenticate the user and return JWT tokens."""
-        username = request.data.get('username')
-        password = request.data.get('password')
+        try:
+            # Extract credentials from request
+            username = request.data.get('username')
+            password = request.data.get('password')
 
-        if not username or not password:
-            return Response({'error': 'Username and password are required.'},
-                            status=status.HTTP_400_BAD_REQUEST)
+            # Validate input
+            if not username or not password:
+                logger.warning(f'Login attempt with missing credentials - Username: {username}')
+                return Response({
+                    'error': 'Username and password are required.'
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-        user = authenticate(username=username, password=password)
+            # Log the login attempt for security monitoring
+            logger.info(f'Login attempt for username: {username}')
 
-        if not user:
-            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+            # Authenticate user
+            user = authenticate(request, username=username, password=password)
 
-        # If the user is a Benevole and needs to complete their profile
-        if isinstance(user, Benevole):
-            if user.is_first_loggin:
-                return Response({'message': 'Please complete your profile first.'}, status=status.HTTP_400_BAD_REQUEST)
+            # Handle authentication failure
+            if not user:
+                logger.warning(f'Failed login attempt for username: {username}')
+                return Response({
+                    'error': 'Invalid credentials'
+                }, status=status.HTTP_401_UNAUTHORIZED)
 
-        tokens = get_tokens_for_user(user)
-        return Response({
-            'message': 'Login successful',
-            'username': user.username,
-            'tokens': tokens
-        }, status=status.HTTP_200_OK)
+            # Check if user is a Benevole and needs to complete profile
+            if hasattr(user, 'is_first_loggin') and user.is_first_loggin:
+                logger.info(f'Login attempt for user with incomplete profile: {username}')
+                return Response({
+                    'message': 'Please complete your profile first.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Generate tokens
+            try:
+                tokens = get_tokens_for_user(user)
+            except Exception as token_error:
+                logger.error(f'Token generation error for user {username}: {str(token_error)}')
+                return Response({
+                    'error': 'Unable to generate authentication tokens'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            # Successful login
+            logger.info(f'Successful login for username: {username}')
+            return Response({
+                'message': 'Login successful',
+                'username': user.username,
+                'tokens': tokens
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            # Catch any unexpected errors
+            logger.error(f'Unexpected error during login: {str(e)}', exc_info=True)
+            return Response({
+                'error': 'An unexpected error occurred during login'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
