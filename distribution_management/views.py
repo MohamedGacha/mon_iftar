@@ -150,7 +150,7 @@ class QRCodeScanView(APIView):
 
 
 class DistributionListLocationAPIView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         location_id = kwargs.get('location_id')
