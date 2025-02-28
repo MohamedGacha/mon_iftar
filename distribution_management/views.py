@@ -165,7 +165,7 @@ class DistributionListLocationAPIView(APIView):
         distribution_lists = DistributionList.objects.filter(location=location)
 
         # Fetch all benevoles with the same location
-        benevoles = Benevole.objects.filter(location=location)
+        benevoles = Benevole.objects.filter(point_distribution=location)
 
         # Serialize benevoles
         benevole_serializer = BenevoleSerializer(benevoles, many=True)
