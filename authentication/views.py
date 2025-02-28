@@ -7,6 +7,7 @@ from user_management.models import Benevole
 from user_management.permissions import IsRegularUser
 from user_management.serializers import FirstLoginSerializer
 from django.contrib.auth import authenticate
+from django.db import IntegrityError
 
 
 def get_tokens_for_user(user):
@@ -17,10 +18,10 @@ def get_tokens_for_user(user):
         'access': str(refresh.access_token),
     }
 
-
 class RegisterUserAPIView(APIView):
     
     permission_classes = [IsAuthenticated, IsRegularUser]
+    
     def post(self, request, *args, **kwargs):
         """Register a new user and return their tokens"""
         username = request.data.get('username')
@@ -30,7 +31,12 @@ class RegisterUserAPIView(APIView):
             return Response({'error': 'Username and password are required.'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        user = Benevole.objects.create_user(username=username, password=password)
+        try:
+            user = Benevole.objects.create_user(username=username, password=password)
+        except IntegrityError:
+            return Response({'error': 'Username already exists.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        
         user.is_first_loggin = True
         user.save()
 
@@ -92,8 +98,10 @@ class RegularLoginAPIView(APIView):
         if not user:
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        if isinstance(user, Benevole) and user.is_first_loggin:
-            return Response({'message': 'Please complete your profile first.'}, status=status.HTTP_400_BAD_REQUEST)
+        # If the user is a Benevole and needs to complete their profile
+        if isinstance(user, Benevole):
+            if user.is_first_loggin:
+                return Response({'message': 'Please complete your profile first.'}, status=status.HTTP_400_BAD_REQUEST)
 
         tokens = get_tokens_for_user(user)
         return Response({
