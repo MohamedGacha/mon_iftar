@@ -227,11 +227,20 @@ class SearchLocationAPIView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
-class CurrentUserAPIView(APIView):
+
+class CurrentUserView(APIView):
+    """
+    View to retrieve the current authenticated user's information.
+    Requires authentication.
+    """
     permission_classes = [permissions.IsAuthenticated]
-    # Add multiple authentication classes to support both token and session auth
-    authentication_classes = [TokenAuthentication, SessionAuthentication]
+
+    def get(self, request):
+        """
+        Handle GET request to fetch current user's details.
         
-    def get(self, request, *args, **kwargs):
+        Returns:
+        - Serialized user information if authenticated
+        """
         serializer = BenevoleSerializer(request.user)
         return Response(serializer.data)
