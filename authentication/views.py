@@ -6,6 +6,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from user_management.models import Benevole
 from user_management.permissions import IsRegularUser
 from user_management.serializers import FirstLoginSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 import logging
 from django.db import IntegrityError
@@ -83,61 +85,38 @@ class FirstLoginAPIView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class RegularLoginAPIView(APIView):
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        # Default implementation
+        data = super().validate(attrs)
+        
+        # Add additional user information to the response
+        data['user_id'] = self.user.id
+        data['username'] = self.user.username
+        data['is_first_login'] = getattr(self.user, 'is_first_loggin', False)
+        
+        return data
+class RegularLoginAPIView(TokenObtainPairView):
+    """
+    Custom token obtain view to include additional user information
+    """
+    serializer_class = CustomTokenObtainPairSerializer
+
     def post(self, request, *args, **kwargs):
-        """Authenticate the user and return JWT tokens."""
         try:
-            # Extract credentials from request
-            username = request.data.get('username')
-            password = request.data.get('password')
-
-            # Validate input
-            if not username or not password:
-                logger.warning(f'Login attempt with missing credentials - Username: {username}')
-                return Response({
-                    'error': 'Username and password are required.'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            # Log the login attempt for security monitoring
-            logger.info(f'Login attempt for username: {username}')
-
-            # Authenticate user
-            user = authenticate(request, username=username, password=password)
-
-            # Handle authentication failure
-            if not user:
-                logger.warning(f'Failed login attempt for username: {username}')
-                return Response({
-                    'error': 'Invalid credentials'
-                }, status=status.HTTP_401_UNAUTHORIZED)
-
-            # Check if user is a Benevole and needs to complete profile
-            if hasattr(user, 'is_first_loggin') and user.is_first_loggin:
-                logger.info(f'Login attempt for user with incomplete profile: {username}')
-                return Response({
-                    'message': 'Please complete your profile first.'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            # Generate tokens
-            try:
-                tokens = get_tokens_for_user(user)
-            except Exception as token_error:
-                logger.error(f'Token generation error for user {username}: {str(token_error)}')
-                return Response({
-                    'error': 'Unable to generate authentication tokens'
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            # Successful login
-            logger.info(f'Successful login for username: {username}')
-            return Response({
-                'message': 'Login successful',
-                'username': user.username,
-                'tokens': tokens
-            }, status=status.HTTP_200_OK)
-
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            # Log successful login
+            logger.info(f'Successful login for username: {request.data.get("username")}')
+            
+            return Response(serializer.validated_data, status=status.HTTP_200_OK)
+        
         except Exception as e:
-            # Catch any unexpected errors
-            logger.error(f'Unexpected error during login: {str(e)}', exc_info=True)
+            # Log login failure
+            logger.error(f'Login failure: {str(e)}')
             return Response({
-                'error': 'An unexpected error occurred during login'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                'error': 'Login failed',
+                'details': str(e)
+            }, status=status.HTTP_401_UNAUTHORIZED)
