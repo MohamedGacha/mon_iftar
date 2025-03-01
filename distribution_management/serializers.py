@@ -2,7 +2,7 @@ from django.utils import timezone
 
 from rest_framework import serializers
 
-from .models import Distribution
+from .models import Distribution, DistributionList
 
 
 class DistributionSerializer(serializers.ModelSerializer):
