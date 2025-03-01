@@ -92,12 +92,11 @@ class DistributionListBeneficiaireListAPIView(APIView):
             beneficiaries = distribution_list.main_list.all(
             ) | distribution_list.waiting_list.all()
 
-        # Serialize the beneficiaries
+        # Serialize the beneficiaries with the enhanced serializer
         serializer = BeneficiaireSerializer(beneficiaries, many=True)
 
         return Response({
             'distribution_list_id': distribution_list.id,
-            # Add other location details if needed
             'location': distribution_list.location.name,
             'beneficiaries': serializer.data
         })
