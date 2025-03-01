@@ -39,3 +39,4 @@ gunicorn
 requests
 django_heroku
 dj_database_url
+pillow
