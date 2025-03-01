@@ -18,7 +18,9 @@ from utils.whatsapp import send_whatsapp_message
 
 from .models import Distribution, DistributionList, QRCodeDistribution
 from .serializers import DistributionSerializer, QRCodeScanSerializer
+import logging
 
+logger = logging.getLogger(__name__)
 
 class CreateDistributionView(APIView):
     permission_classes = [IsAdminUser]
