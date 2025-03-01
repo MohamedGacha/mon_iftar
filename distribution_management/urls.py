@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     CreateDistributionView,
+    DeleteDistributionView,
     DistributionListBeneficiaireListAPIView,
     DistributionListLocationAPIView,
     QRCodeScanView,
@@ -13,6 +14,13 @@ urlpatterns = [
     # API for creating a new distribution
     path('distributions/create/', CreateDistributionView.as_view(),
          name='create-distribution'),
+
+
+     path(
+        'distributions/<int:distribution_id>/delete/', 
+        DeleteDistributionView.as_view(), 
+        name='delete_distribution'
+    ),
 
     # API for getting beneficiaries in a specific distribution list
     path('distributions/<int:distribution_list_id>/beneficiaries/',

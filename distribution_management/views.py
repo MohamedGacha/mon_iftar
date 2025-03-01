@@ -64,6 +64,73 @@ class CreateDistributionView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class DeleteDistributionView(APIView):
+    """
+    API View to handle distribution deletion with comprehensive checks and permissions.
+    
+    This view ensures that:
+    - Only admin users can delete distributions
+    - Associated QR codes are also cleaned up
+    - Proper error handling is implemented
+    """
+    
+    permission_classes = [IsAdminUser]
+
+    def delete(self, request, distribution_id):
+        """
+        Delete a specific distribution by its ID.
+        
+        Workflow:
+        1. Validate the distribution exists
+        2. Check if deletion is allowed (e.g., not in the past)
+        3. Delete associated QR codes
+        4. Delete the distribution
+        5. Return appropriate response
+        """
+        try:
+            # Retrieve the specific distribution
+            distribution = get_object_or_404(Distribution, id=distribution_id)
+            
+            # Optional: Add a check to prevent deleting past distributions
+            if distribution.date_distribution < timezone.now():
+                return Response(
+                    {"detail": "Cannot delete a distribution that has already occurred."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Find and delete associated QR codes
+            QRCodeDistribution.objects.filter(
+                beneficiaire__in=distribution.distribution_list.main_list.all()
+            ).delete()
+            
+            # Store some information before deletion for the response
+            distribution_info = {
+                'id': distribution.id,
+                'date': distribution.date_distribution,
+                'location': distribution.location.name,
+                'stock': distribution.stock
+            }
+            
+            # Delete the distribution
+            distribution.delete()
+            
+            return Response({
+                'detail': 'Distribution deleted successfully',
+                'deleted_distribution': distribution_info
+            }, status=status.HTTP_200_OK)
+        
+        except Distribution.DoesNotExist:
+            return Response(
+                {"detail": "Distribution not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        except Exception as e:
+            # Catch-all for unexpected errors
+            return Response(
+                {"detail": f"Error deleting distribution: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class DistributionListBeneficiaireListAPIView(APIView):
     permission_classes = [IsAdminUser]
