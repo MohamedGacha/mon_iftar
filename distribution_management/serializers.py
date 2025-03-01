@@ -13,7 +13,7 @@ class DistributionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Distribution
-        fields = ['date_distribution', 'stock', 'description', 'location', 'distribution_list']
+        fields = ['id', 'date_distribution', 'stock', 'description', 'location', 'distribution_list']
 
     def validate(self, data):
         """Ensure the date_distribution is in the future."""
