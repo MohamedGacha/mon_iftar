@@ -2,14 +2,13 @@ from django.utils import timezone
 
 from rest_framework import serializers
 
-from .models import Distribution, DistributionList
+from .models import Distribution
 
 
 class DistributionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Distribution
         fields = [
-            'id', 
             'distribution_list', 
             'date_distribution', 
             'stock', 
