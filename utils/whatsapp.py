@@ -32,7 +32,8 @@ def send_whatsapp_qr_code(to_number, code_unique, date_validite):
     Generate a QR code for the unique code and send a WhatsApp message 
     with the QR code image and a message to the provided number.
     """
-
+    print(code_unique)
+    pass
     # Generate the QR code image
     qr = qrcode.QRCode(
         version=1,
