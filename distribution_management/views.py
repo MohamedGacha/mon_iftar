@@ -49,8 +49,8 @@ class CreateDistributionView(APIView):
             # Save the new distribution
             distribution = serializer.save()
 
-            # Create QR codes for all beneficiaries in the distribution list
-            beneficiaries = distribution_list.beneficiaires.all()
+            # Create QR codes for all beneficiaries in the MAIN list
+            beneficiaries = distribution_list.main_list.all()
             qr_codes = []
             for beneficiaire in beneficiaries:
                 # Create the QRCodeDistribution for each beneficiaire
