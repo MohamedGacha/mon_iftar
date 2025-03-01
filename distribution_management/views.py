@@ -1,3 +1,4 @@
+
 from django.utils import timezone 
 
 from django.shortcuts import get_object_or_404
@@ -25,26 +26,23 @@ class CreateDistributionView(APIView):
 
     def post(self, request, *args, **kwargs):
         """
-        Create a new distribution for a distribution list, 
-        with stock, description, and date/time.
-        QR codes are created for all beneficiaries in the distribution list.
+        Create a new distribution for a location, with stock, description, and date/time.
+        The distribution list is automatically selected based on the location.
+        QR codes are created for all beneficiaries in the associated distribution list.
         """
-        # Extract the distribution list ID from the request data
-        distribution_list_id = request.data.get('distribution_list')
-        
-        # Validate that distribution list exists
-        try:
-            distribution_list = DistributionList.objects.get(id=distribution_list_id)
-        except DistributionList.DoesNotExist:
-            return Response(
-                {"detail": f"Distribution list with ID {distribution_list_id} not found."}, 
-                status=404
-            )
+        # Extract the location from the request data
+        location_id = request.data.get('location')
+        location = get_object_or_404(Location, id=location_id)
 
-        # Prepare the data for serialization
+        # Check if there is a distribution list associated with the location
+        distribution_list = DistributionList.objects.filter(
+            location=location).first()
+
+        if not distribution_list:
+            return Response({"detail": "No distribution list found for the specified location."}, status=400)
+
+        # Add the location to the data for the serializer
         data = request.data.copy()
-        
-        # Ensure the distribution list ID is in the data
         data['distribution_list'] = distribution_list.id
 
         # Create a DistributionSerializer instance with the provided data
@@ -52,28 +50,22 @@ class CreateDistributionView(APIView):
 
         if serializer.is_valid():
             # Save the new distribution
-            distribution = serializer.save()
+            serializer.save()
 
             # Create QR codes for all beneficiaries in the distribution list
+            # Assuming `beneficiaires` is the related name
             beneficiaries = distribution_list.beneficiaires.all()
-            qr_codes = []
             for beneficiaire in beneficiaries:
                 # Create the QRCodeDistribution for each beneficiaire
                 qr_code = QRCodeDistribution.objects.create(
                     beneficiaire=beneficiaire,
-                    distribution=distribution,  # Link the QR code to the specific distribution
                     date_validite=timezone.localdate()
                 )
-                qr_codes.append(qr_code)
+                # You can call save explicitly to trigger the send_whatsapp_qr_code if necessary:
+                qr_code.save()
 
-            # Prepare the response data
-            response_data = serializer.data
-            response_data['qr_codes_generated'] = len(qr_codes)
-
-            return Response(response_data, status=201)
+            return Response(serializer.data, status=201)
         else:
-            # Log validation errors for debugging
-            print("Serializer validation errors:", serializer.errors)
             return Response(serializer.errors, status=400)
 
 
