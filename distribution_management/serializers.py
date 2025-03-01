@@ -4,8 +4,13 @@ from rest_framework import serializers
 
 from .models import Distribution, DistributionList
 
-
 class DistributionSerializer(serializers.ModelSerializer):
+    # Explicitly specify that distribution_list should be an ID
+    distribution_list = serializers.PrimaryKeyRelatedField(
+        queryset=DistributionList.objects.all(),
+        many=False
+    )
+
     class Meta:
         model = Distribution
         fields = [
@@ -16,13 +21,7 @@ class DistributionSerializer(serializers.ModelSerializer):
         ]
         
     def validate(self, data):
-        # Validate distribution list exists
-        distribution_list_id = data.get('distribution_list')
-        if not DistributionList.objects.filter(id=distribution_list_id).exists():
-            raise serializers.ValidationError({
-                "distribution_list": "Invalid distribution list ID"
-            })
-        
+        # Validate distribution list exists (this is now handled by PrimaryKeyRelatedField)
         # Validate stock is positive
         stock = data.get('stock')
         if stock is not None and stock < 0:
