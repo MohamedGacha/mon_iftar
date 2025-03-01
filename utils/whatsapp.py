@@ -6,7 +6,6 @@ from twilio.rest import Client
 
 
 def send_whatsapp_message(to_number: str, message: str, console: bool = False):
-
     if not console:
         # Your Twilio credentials
         account_sid = settings.TWILIO_ACCOUNT_SID
@@ -17,13 +16,15 @@ def send_whatsapp_message(to_number: str, message: str, console: bool = False):
         client = Client(account_sid, auth_token)
 
         # Send the WhatsApp message
-        message = client.messages.create(
+        message_response = client.messages.create(
             body=message,
             from_=from_number,
             to=f'whatsapp:{to_number}'
         )
-
-    print(f'Message sent: {message.sid}')
+        print(f'Message sent: {message_response.sid}')
+    else:
+        # Just print to console
+        print(f'Console mode - Message content: {message}')
 
 
 def send_whatsapp_qr_code(to_number, code_unique, date_validite):
