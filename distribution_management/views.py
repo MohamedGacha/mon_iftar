@@ -219,7 +219,7 @@ class UpcomingDistributionAPIView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request, *args, **kwargs):
-        # Get the current date and time
+        # Get the current date and time correctly using Django's timezone
         now = timezone.now()
 
         # Filter distributions that are scheduled in the future (after the current time)
