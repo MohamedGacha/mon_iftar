@@ -4,6 +4,7 @@ from io import BytesIO
 import qrcode
 from django.conf import settings
 from twilio.rest import Client
+import urllib.parse
 
 def send_whatsapp_message(to_number: str, message: str, console: bool = False):
     # Your Twilio credentials
@@ -27,39 +28,30 @@ def send_whatsapp_qr_code(to_number, code_unique, date_validite):
     Generate a QR code for the unique code and send a WhatsApp message 
     with the QR code image and a message to the provided number.
     """
-
     print(code_unique)
-    # Generate the QR code image
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
-    )
-    qr.add_data(str(code_unique))
-    qr.make(fit=True)
-    img = qr.make_image(fill='black', back_color='white')
-
-    # Convert the image to a file-like object in memory
-    img_byte_arr = BytesIO()
-    img.save(img_byte_arr, format='PNG')
-    img_byte_arr.seek(0)
-
-    # Encode the image to base64
-    base64_image = base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
-
+    
+    # URL encode the data for the QR code
+    encoded_data = urllib.parse.quote(str(code_unique))
+    
+    # Generate a QR code URL using a public API service
+    # Option 1: QR Server API (free, no sign-up needed)
+    qr_code_url = f"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={encoded_data}"
+    
+    # Option 2: Google Charts API (also free, reliable)
+    # qr_code_url = f"https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl={encoded_data}"
+    
     # Twilio client setup
     client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
 
     # Message body
     message_body = f"Your unique QR code is: {code_unique}\nValid until: {date_validite}"
 
-    # Upload the QR code image to Twilio's media API
+    # Send WhatsApp message with the QR code URL
     message = client.messages.create(
         body=message_body,
         from_=f"whatsapp:{settings.TWILIO_WHATSAPP_FROM}",
         to=f"whatsapp:{to_number}",
-        media_url=[f"data:image/png;base64,{base64_image}"],
+        media_url=[qr_code_url],  # This is a direct URL to the QR code image
     )
 
     # Return the message SID
