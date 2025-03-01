@@ -113,12 +113,11 @@ class QRCodeScanView(APIView):
 
             try:
                 # Retrieve the QR code object based on code_unique
-                qr_code = QRCodeDistribution.objects.get(
-                    code_unique=code_unique)
+                qr_code = QRCodeDistribution.objects.get(code_unique=code_unique)
 
                 # Get the beneficiaire associated with the qr_code
                 beneficiaire = qr_code.beneficiaire
-                # assuming user is linked to benevole
+                # Assuming user is linked to benevole
                 benevole = Benevole.objects.get(user=request.user)
 
                 # Ensure both benevole and beneficiaire have the same location
@@ -135,7 +134,14 @@ class QRCodeScanView(APIView):
                     console=True
                 )
 
-                return Response({"detail": "QR code validated successfully!"}, status=status.HTTP_200_OK)
+                # Serialize the beneficiaire data
+                beneficiaire_data = BeneficiaireSerializer(beneficiaire).data
+
+                # Return response with beneficiaire data included
+                return Response({
+                    "detail": "QR code validated successfully!",
+                    "beneficiaire": beneficiaire_data  # Include the beneficiaire data
+                }, status=status.HTTP_200_OK)
 
             except QRCodeDistribution.DoesNotExist:
                 return Response({"detail": "QR code not found."}, status=status.HTTP_404_NOT_FOUND)
@@ -146,7 +152,6 @@ class QRCodeScanView(APIView):
 
         # If serializer is invalid
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class DistributionListLocationAPIView(APIView):
     permission_classes = [IsAuthenticated]
