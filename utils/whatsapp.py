@@ -6,25 +6,21 @@ from django.conf import settings
 from twilio.rest import Client
 
 def send_whatsapp_message(to_number: str, message: str, console: bool = False):
-    if not console:
-        # Your Twilio credentials
-        account_sid = settings.TWILIO_ACCOUNT_SID
-        auth_token = settings.TWILIO_AUTH_TOKEN
-        from_number = settings.TWILIO_WHATSAPP_NUMBER
+    # Your Twilio credentials
+    account_sid = settings.TWILIO_ACCOUNT_SID
+    auth_token = settings.TWILIO_AUTH_TOKEN
+    from_number = settings.TWILIO_WHATSAPP_NUMBER
 
-        # Initialize Twilio client
-        client = Client(account_sid, auth_token)
+    # Initialize Twilio client
+    client = Client(account_sid, auth_token)
 
-        # Send the WhatsApp message
-        message_response = client.messages.create(
-            body=message,
-            from_=from_number,
-            to=f'whatsapp:{to_number}'
-        )
-        print(f'Message sent: {message_response.sid}')
-    else:
-        # Just print to console
-        print(f'Console mode - Message content: {message}')
+    # Send the WhatsApp message
+    message_response = client.messages.create(
+        body=message,
+        from_=from_number,
+        to=f'whatsapp:{to_number}'
+    )
+    print(f'Message sent: {message_response.sid}')
 
 def send_whatsapp_qr_code(to_number, code_unique, date_validite):
     """
@@ -33,7 +29,6 @@ def send_whatsapp_qr_code(to_number, code_unique, date_validite):
     """
 
     print(code_unique)
-    pass
     # Generate the QR code image
     qr = qrcode.QRCode(
         version=1,
