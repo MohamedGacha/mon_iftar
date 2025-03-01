@@ -42,6 +42,9 @@ class DistributionList(models.Model):
 
     def remove_beneficiaire(self, beneficiaire):
         """Supprime un bénéficiaire et gère la promotion FIFO depuis la liste d'attente."""
+        # Initialize message_body with a default value
+        message_body = "Your status in the distribution list has been updated."
+        
         if beneficiaire in self.main_list.all():
             self.main_list.remove(beneficiaire)
             message_body = 'You have been removed from the primary distribution list.'
@@ -60,10 +63,13 @@ class DistributionList(models.Model):
         elif beneficiaire in self.waiting_list.all():
             self.waiting_list.remove(beneficiaire)
             message_body = 'You have been removed from the waiting list.'
+        else:
+            # Beneficiary is not in any list, maybe log this unusual situation
+            message_body = "You were not found in our distribution lists."
 
         # Send the message to the removed beneficiaire
         send_whatsapp_message(beneficiaire.num_telephone,
-                              message_body, console=True)
+                            message_body, console=True)
 
     def save(self, *args, **kwargs):
         """Custom save to enforce validation."""
