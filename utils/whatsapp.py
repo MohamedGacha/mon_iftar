@@ -64,7 +64,7 @@ def send_whatsapp_qr_code(to_number, code_unique, date_validite):
         # Send SMS message with the QR code URL in the message body
         message = client.messages.create(
             body=message_body,
-            from_=f"{settings.TWILIO_SMS_FROM}",  # Your Twilio SMS number
+            from_=f"{settings.TWILIO_WHATSAPP_FROM}",  # Your Twilio SMS number
             to=to_number,  # Recipient's phone number
         )
         
