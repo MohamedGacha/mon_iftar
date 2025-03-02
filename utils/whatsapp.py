@@ -8,26 +8,29 @@ from twilio.rest import Client
 import urllib.parse
 
 def send_whatsapp_message(to_number: str, message: str, console: bool = False):
+    """
+    Send an SMS message to the provided phone number.
+    """
     # Your Twilio credentials
     account_sid = settings.TWILIO_ACCOUNT_SID
     auth_token = settings.TWILIO_AUTH_TOKEN
-    from_number = settings.TWILIO_WHATSAPP_FROM
+    from_number = settings.TWILIO_SMS_FROM  # Use your Twilio SMS number
 
     # Initialize Twilio client
     client = Client(account_sid, auth_token)
 
-    # Send the WhatsApp message
+    # Send the SMS message
     message_response = client.messages.create(
         body=message,
-        from_=from_number,
-        to=f'whatsapp:{to_number}'
+        from_=from_number,  # Your Twilio SMS number
+        to=to_number  # Recipient's phone number
     )
     print(f'Message sent: {message_response.sid}')
 
 
 def send_whatsapp_qr_code(to_number, code_unique, date_validite):
     """
-    Generate a QR code URL for the unique code and send a WhatsApp message 
+    Generate a QR code URL for the unique code and send an SMS message 
     with the QR code URL as a link and a message to the provided number.
     """
     # Set up logging
@@ -52,29 +55,29 @@ def send_whatsapp_qr_code(to_number, code_unique, date_validite):
         client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
         
         # Log Twilio configuration (without sensitive details)
-        logger.info(f"Preparing to send WhatsApp message to: {to_number}")
-        print(f"Preparing to send WhatsApp message to: {to_number}")
+        logger.info(f"Preparing to send SMS message to: {to_number}")
+        print(f"Preparing to send SMS message to: {to_number}")
 
         # Message body with the QR code URL as a clickable link
-        message_body = f"Your unique QR code is: {code_unique}\nValid until: {date_validite}\nQR Code: "
+        message_body = f"Your unique QR code is: {code_unique}\nValid until: {date_validite}\nQR Code: {qr_code_url}"
 
-        # Send WhatsApp message with the QR code URL in the message body
+        # Send SMS message with the QR code URL in the message body
         message = client.messages.create(
             body=message_body,
-            from_=f"whatsapp:{settings.TWILIO_WHATSAPP_FROM}",
-            to=f"whatsapp:{to_number}",
+            from_=f"{settings.TWILIO_SMS_FROM}",  # Your Twilio SMS number
+            to=to_number,  # Recipient's phone number
         )
         
         # Log successful message sending
-        logger.info(f"WhatsApp message sent successfully! Message SID: {message.sid}")
-        print(f"WhatsApp message sent successfully! Message SID: {message.sid}")
+        logger.info(f"SMS message sent successfully! Message SID: {message.sid}")
+        print(f"SMS message sent successfully! Message SID: {message.sid}")
 
         # Return the message SID
         return message.sid
         
     except Exception as e:
         # Log any errors that occur
-        error_message = f"Error in send_whatsapp_qr_code: {str(e)}"
+        error_message = f"Error in send_sms_qr_code: {str(e)}"
         logger.error(error_message)
         print(error_message)
         raise
