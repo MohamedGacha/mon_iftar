@@ -164,8 +164,17 @@ class DistributionListBeneficiaireListAPIView(APIView):
         # Create a dictionary to store validation status for each beneficiary
         validation_status = {}
         
-        # Check QR code validation status for each beneficiary
+        # Also create a dictionary to store location names for each beneficiary
+        location_names = {}
+        
+        # Check QR code validation status for each beneficiary and get location names
         for beneficiary in beneficiaries:
+            # Store the location name for this beneficiary
+            if beneficiary.point_distribution:
+                location_names[beneficiary.id] = beneficiary.point_distribution.name
+            else:
+                location_names[beneficiary.id] = None
+                
             try:
                 # Try to get today's QR code for this beneficiary
                 qr_code = QRCodeDistribution.objects.get(
@@ -211,15 +220,21 @@ class DistributionListBeneficiaireListAPIView(APIView):
         # Serialize the beneficiaries
         serializer = BeneficiaireSerializer(beneficiaries, many=True)
         
-        # Enhance the serialized data with validation information
+        # Enhance the serialized data with validation information and replace point_distribution
         enhanced_data = []
         for beneficiary_data in serializer.data:
             beneficiary_id = beneficiary_data['id']
+            
+            # Add validation status
             beneficiary_data['qr_code_status'] = validation_status.get(beneficiary_id, {
                 'has_qr_code': False,
                 'is_validated': False,
                 'validated_at': None
             })
+            
+            # Replace point_distribution with the location name
+            beneficiary_data['point_distribution'] = location_names.get(beneficiary_id)
+            
             enhanced_data.append(beneficiary_data)
 
         return Response({
