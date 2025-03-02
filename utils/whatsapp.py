@@ -24,10 +24,11 @@ def send_whatsapp_message(to_number: str, message: str, console: bool = False):
     )
     print(f'Message sent: {message_response.sid}')
 
+
 def send_whatsapp_qr_code(to_number, code_unique, date_validite):
     """
-    Generate a QR code for the unique code and send a WhatsApp message 
-    with the QR code image and a message to the provided number.
+    Generate a QR code URL for the unique code and send a WhatsApp message 
+    with the QR code URL as a link and a message to the provided number.
     """
     # Set up logging
     logger = logging.getLogger(__name__)
@@ -54,15 +55,14 @@ def send_whatsapp_qr_code(to_number, code_unique, date_validite):
         logger.info(f"Preparing to send WhatsApp message to: {to_number}")
         print(f"Preparing to send WhatsApp message to: {to_number}")
 
-        # Message body
-        message_body = f"Your unique QR code is: {code_unique}\nValid until: {date_validite}"
+        # Message body with the QR code URL as a clickable link
+        message_body = f"Your unique QR code is: {code_unique}\nValid until: {date_validite}\nQR Code: {qr_code_url}"
 
-        # Send WhatsApp message with the QR code URL
+        # Send WhatsApp message with the QR code URL in the message body
         message = client.messages.create(
             body=message_body,
             from_=f"whatsapp:{settings.TWILIO_WHATSAPP_FROM}",
             to=f"whatsapp:{to_number}",
-            media_url=[qr_code_url],  # This is a direct URL to the QR code image
         )
         
         # Log successful message sending
