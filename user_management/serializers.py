@@ -39,13 +39,21 @@ class BenevoleCreateSerializer(serializers.ModelSerializer):
 
 
 class BeneficiaireSerializer(serializers.ModelSerializer):
+    is_validated_today = serializers.SerializerMethodField()
+    
     class Meta:
         model = Beneficiaire
-        fields = ['id', 'num_beneficiaire', 'nom',
-                  'prenom', 'num_telephone', 'point_distribution']
-        # Make num_beneficiaire read-only, as it is generated automatically
-        read_only_fields = ['num_beneficiaire']
-
+        fields = [
+            'id', 'nom', 'prenom', 'num_telephone', 'point_distribution',
+            'num_beneficiaire', 'is_validated_today'
+            # Include any other existing fields
+        ]
+    
+    def get_is_validated_today(self, obj):
+        """
+        Returns whether the beneficiary has already validated their QR code today.
+        """
+        return obj.is_todays_code_validated()
 
 class BeneficiaireCreateSerializer(serializers.ModelSerializer):
     class Meta:

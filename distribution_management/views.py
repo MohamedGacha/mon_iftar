@@ -157,14 +157,75 @@ class DistributionListBeneficiaireListAPIView(APIView):
             # Default to showing both lists if no filter is provided
             beneficiaries = distribution_list.main_list.all(
             ) | distribution_list.waiting_list.all()
+            
+        # Get today's date for QR code validation check
+        today = timezone.localdate()
+        
+        # Create a dictionary to store validation status for each beneficiary
+        validation_status = {}
+        
+        # Check QR code validation status for each beneficiary
+        for beneficiary in beneficiaries:
+            try:
+                # Try to get today's QR code for this beneficiary
+                qr_code = QRCodeDistribution.objects.get(
+                    beneficiaire=beneficiary,
+                    date_validite=today
+                )
+                # Check if it's been validated (heure_utilise is not None)
+                validation_status[beneficiary.id] = {
+                    'has_qr_code': True,
+                    'is_validated': qr_code.heure_utilise is not None,
+                    'validated_at': qr_code.heure_utilise
+                }
+            except QRCodeDistribution.DoesNotExist:
+                # No QR code exists for today
+                validation_status[beneficiary.id] = {
+                    'has_qr_code': False,
+                    'is_validated': False,
+                    'validated_at': None
+                }
+            except QRCodeDistribution.MultipleObjectsReturned:
+                # Handle the case where multiple QR codes exist (unlikely but possible)
+                # Get the most recently validated code
+                qr_codes = QRCodeDistribution.objects.filter(
+                    beneficiaire=beneficiary,
+                    date_validite=today
+                ).order_by('-heure_utilise')
+                
+                # Check if any of them are validated
+                if qr_codes.filter(heure_utilise__isnull=False).exists():
+                    validated_code = qr_codes.filter(heure_utilise__isnull=False).first()
+                    validation_status[beneficiary.id] = {
+                        'has_qr_code': True,
+                        'is_validated': True,
+                        'validated_at': validated_code.heure_utilise
+                    }
+                else:
+                    validation_status[beneficiary.id] = {
+                        'has_qr_code': True,
+                        'is_validated': False,
+                        'validated_at': None
+                    }
 
-        # Serialize the beneficiaries with the enhanced serializer
+        # Serialize the beneficiaries
         serializer = BeneficiaireSerializer(beneficiaries, many=True)
+        
+        # Enhance the serialized data with validation information
+        enhanced_data = []
+        for beneficiary_data in serializer.data:
+            beneficiary_id = beneficiary_data['id']
+            beneficiary_data['qr_code_status'] = validation_status.get(beneficiary_id, {
+                'has_qr_code': False,
+                'is_validated': False,
+                'validated_at': None
+            })
+            enhanced_data.append(beneficiary_data)
 
         return Response({
             'distribution_list_id': distribution_list.id,
             'location': distribution_list.location.name,
-            'beneficiaries': serializer.data
+            'beneficiaries': enhanced_data
         })
 
 

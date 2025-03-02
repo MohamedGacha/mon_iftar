@@ -3,7 +3,8 @@ import uuid
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models
-
+from django.utils import timezone
+from distribution_management.models import QRCodeDistribution
 
 class Location(models.Model):
     name = models.CharField(max_length=255)
@@ -77,7 +78,21 @@ class Beneficiaire(models.Model):
     point_distribution = models.ForeignKey(
         'Location', on_delete=models.SET_NULL, null=True, blank=True
     )
-
+    def is_todays_code_validated(self):
+        """
+        Checks if the beneficiary has a validated QR code for today's distribution.
+        Returns True if a QR code has been validated today, False otherwise.
+        """
+        today = timezone.localdate()
+        
+        # Get QR codes generated for today
+        todays_codes = QRCodeDistribution.objects.filter(
+            beneficiaire=self,
+            date_validite=today
+        )
+        
+        # Check if any of today's codes have been validated (heure_utilise is not None)
+        return todays_codes.filter(heure_utilise__isnull=False).exists()
     def generate_unique_num_beneficiaire(self):
         """ Génère un code unique de type E1234 en utilisant un UUID. """
         while True:
