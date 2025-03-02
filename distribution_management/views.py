@@ -183,12 +183,14 @@ class QRCodeScanView(APIView):
 
                 # Get the beneficiaire associated with the qr_code
                 beneficiaire = qr_code.beneficiaire
-                # Assuming user is linked to benevole
-                benevole = request.user
+                
+                # The current user IS the benevole (since Benevole inherits from AbstractUser)
+                benevole = request.user  # No need to query for Benevole
 
-                # Ensure both benevole and beneficiaire have the same location
-                if beneficiaire.location != benevole.location:
-                    return Response({"detail": "Locations must match between Benevole and Beneficiaire."}, status=status.HTTP_400_BAD_REQUEST)
+                # Compare point_distribution fields, not location fields
+                if beneficiaire.point_distribution != benevole.point_distribution:
+                    return Response({"detail": "Distribution points must match between Benevole and Beneficiaire."}, 
+                                status=status.HTTP_400_BAD_REQUEST)
 
                 # Validate the QR code (it will set heure_utilise if valid)
                 qr_code.validate_code()

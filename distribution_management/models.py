@@ -113,16 +113,15 @@ class QRCodeDistribution(models.Model):
 
         # Check if the QR code is valid for today
         if self.date_validite == today:
-            # Get the location of the beneficiaire
-            beneficiaire_location = self.beneficiaire.location
+            # Get the point_distribution of the beneficiaire (NOT location)
+            beneficiaire_point_dist = self.beneficiaire.point_distribution
 
-            # Find the distribution that matches the beneficiaire's location
+            # Find the distribution that matches the beneficiaire's point_distribution
             try:
                 distribution = Distribution.objects.get(
-                    location=beneficiaire_location)
+                    location=beneficiaire_point_dist)  # This may also need revision
             except Distribution.DoesNotExist:
-                raise ValidationError(
-                    "No distribution found for this location.")
+                raise ValidationError("No distribution found for this location.")
 
             # Decrement the stock for the distribution (we assume 1 item per scan)
             try:
