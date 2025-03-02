@@ -56,7 +56,7 @@ def send_whatsapp_qr_code(to_number, code_unique, date_validite):
         print(f"Preparing to send WhatsApp message to: {to_number}")
 
         # Message body with the QR code URL as a clickable link
-        message_body = f"Your unique QR code is: {code_unique}\nValid until: {date_validite}\nQR Code: {qr_code_url}"
+        message_body = f"Your unique QR code is: {code_unique}\nValid until: {date_validite}\nQR Code: "
 
         # Send WhatsApp message with the QR code URL in the message body
         message = client.messages.create(
