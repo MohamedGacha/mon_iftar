@@ -184,7 +184,7 @@ class QRCodeScanView(APIView):
                 # Get the beneficiaire associated with the qr_code
                 beneficiaire = qr_code.beneficiaire
                 # Assuming user is linked to benevole
-                benevole = Benevole.objects.get(user=request.user)
+                benevole = request.user
 
                 # Ensure both benevole and beneficiaire have the same location
                 if beneficiaire.location != benevole.location:
