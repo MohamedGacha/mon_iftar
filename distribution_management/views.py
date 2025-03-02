@@ -192,10 +192,29 @@ class QRCodeScanView(APIView):
                     return Response({"detail": "Distribution points must match between Benevole and Beneficiaire."}, 
                                 status=status.HTTP_400_BAD_REQUEST)
 
-                # Validate the QR code (it will set heure_utilise if valid)
+                # Check if the QR code has already been validated
+                if qr_code.heure_utilise is not None:
+                    # Send a different message for already validated QR code
+                    send_whatsapp_message(
+                        beneficiaire.num_telephone,
+                        f"This QR code {code_unique} has already been validated today at {qr_code.heure_utilise}.",
+                        console=True
+                    )
+
+                    # Serialize the beneficiaire data
+                    beneficiaire_data = BeneficiaireSerializer(beneficiaire).data
+
+                    # Return response indicating the code was already used
+                    return Response({
+                        "detail": "QR code has already been validated!",
+                        "validated_at": qr_code.heure_utilise,
+                        "beneficiaire": beneficiaire_data
+                    }, status=status.HTTP_400_BAD_REQUEST)
+
+                # If not already validated, proceed with validation
                 qr_code.validate_code()
 
-                # Send a success message (optional, you can remove this if not needed)
+                # Send a success message
                 send_whatsapp_message(
                     beneficiaire.num_telephone,
                     f"Your QR code {code_unique} has been validated successfully!",
