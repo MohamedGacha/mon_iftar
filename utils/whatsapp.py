@@ -1,7 +1,7 @@
+import time
 import base64
 from io import BytesIO
 import logging
-
 import qrcode
 from django.conf import settings
 from twilio.rest import Client
@@ -18,7 +18,7 @@ def send_whatsapp_message(to_number: str, message: str, console: bool = False):
 
     # Initialize Twilio client
     client = Client(account_sid, auth_token)
-
+    time.sleep(0.01)
     # Send the SMS message
     message_response = client.messages.create(
         body=message,
@@ -62,6 +62,7 @@ def send_whatsapp_qr_code(to_number, code_unique, date_validite):
         message_body = f"Your unique QR code is: {code_unique}\nValid until: {date_validite}\nQR Code: {qr_code_url}"
 
         # Send SMS message with the QR code URL in the message body
+        time.sleep(0.01)
         message = client.messages.create(
             body=message_body,
             from_=f"{settings.TWILIO_WHATSAPP_FROM}",  # Your Twilio SMS number
