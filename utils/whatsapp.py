@@ -11,7 +11,7 @@ def send_whatsapp_message(to_number: str, message: str, console: bool = False):
     # Your Twilio credentials
     account_sid = settings.TWILIO_ACCOUNT_SID
     auth_token = settings.TWILIO_AUTH_TOKEN
-    from_number = settings.TWILIO_WHATSAPP_NUMBER
+    from_number = settings.TWILIO_WHATSAPP_FROM
 
     # Initialize Twilio client
     client = Client(account_sid, auth_token)
